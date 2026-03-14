@@ -238,7 +238,8 @@ app.post('/api/initiate-payment', async (req, res) => {
 
       res.status(400).json({
         success: false,
-        error: `Paytm: ${resultMsg} (${resultCode})`
+        error: `Paytm: ${resultMsg} (${resultCode})`,
+        paytmResponse: paytmResponse
       });
     }
 
