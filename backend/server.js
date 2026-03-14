@@ -3,7 +3,6 @@
 // Uses OFFICIAL paytmchecksum npm package for correct checksum generation
 
 import express from 'express';
-import cors from 'cors';
 import { createRequire } from 'module';
 import dotenv from 'dotenv';
 
@@ -76,7 +75,9 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     message: 'JRB Gold Payment Backend is running',
+    version: 'v2-cors-fix',
     environment: PAYTM_ENVIRONMENT,
+    corsOrigins: corsOrigins,
     timestamp: new Date().toISOString()
   });
 });
