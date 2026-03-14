@@ -37,7 +37,7 @@ const PAYTM_CHANNEL_ID = process.env.PAYTM_CHANNEL_ID || 'WEB';
 // ============================
 
 const corsOrigins = process.env.CORS_ORIGINS
-  ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
+  ? process.env.CORS_ORIGINS.split(',').map(s => s.trim().replace(/\/+$/, ''))
   : [
     'http://localhost:5173',
     'http://localhost:8080',
