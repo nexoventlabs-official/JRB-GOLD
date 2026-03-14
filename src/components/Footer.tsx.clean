@@ -1,0 +1,214 @@
+import { Phone, Mail, MapPin, Instagram, Facebook, MessageCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { PolicyLinks } from "./PolicyLinks";
+
+const Footer = () => {
+  const companyLinks = [
+    { name: "About Us", href: "/about#about" },
+    { name: "Our Story", href: "/about#story" },
+    { name: "Craftsmanship", href: "/about#craft" },
+    { name: "Contact Info", href: "/about#contact-info" },
+  ];
+
+  const shopLinks = [
+    { name: "Gold Jewelry", href: "/shop?category=gold" },
+    { name: "Silver Collection", href: "/shop?category=silver" },
+    { name: "Coins", href: "/shop?category=coins" },
+    { name: "Gift Cards", href: "/gift-cards" },
+  ];
+
+  const serviceLinks = [
+    { name: "Exchange Old Gold", href: "/services#exchange" },
+    { name: "Re-Pledge Transfer", href: "/services#repledge" },
+    { name: "Gold Savings Scheme", href: "/schemes" },
+    { name: "Appraiser Training", href: "/training" },
+  ];
+
+  const helpLinks = [
+    { name: "Contact Us", href: "/contact" },
+    { name: "Size Guide", href: "/size-guide" },
+    { name: "Care Instructions", href: "/care" },
+    { name: "Track Order", href: "/track" },
+  ];
+
+  return (
+    <footer className="bg-ink text-ivory">
+      {/* Newsletter Section */}
+      <div className="bg-gray-900 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h3 className="text-2xl font-playfair font-bold mb-4">Subscribe to Our Newsletter</h3>
+            <p className="mb-6 max-w-2xl mx-auto">Stay updated with our latest collections, exclusive offers, and jewelry care tips</p>
+            <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+              <Input 
+                type="email" 
+                placeholder="Enter your email" 
+                className="bg-gray-800 border-gray-600 focus:border-white text-white placeholder-gray-400"
+              />
+              <Button className="bg-white hover:bg-gray-200 text-gray-900">
+                Subscribe
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Footer */}
+      <div className="border-t border-gray-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {/* Company Column */}
+            <div>
+              <a href="/about#about" className="hover:no-underline">
+                <h3 className="text-lg font-playfair font-semibold mb-6 text-yellow-500 hover:text-yellow-400 transition-colors">
+                  Company
+                </h3>
+              </a>
+              <ul className="space-y-3">
+                {companyLinks.map((link) => (
+                  <li key={link.name}>
+                    <a
+                      href={link.href}
+                      className="text-gray-300 hover:text-white transition-colors duration-200"
+                    >
+                      {link.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Shop Column */}
+            <div>
+              <a href="/shop" className="hover:no-underline">
+                <h3 className="text-lg font-playfair font-semibold mb-6 text-yellow-500 hover:text-yellow-400 transition-colors">
+                  Shop
+                </h3>
+              </a>
+              <ul className="space-y-3">
+                {shopLinks.map((link) => (
+                  <li key={link.name}>
+                    <a
+                      href={link.href}
+                      className="text-gray-300 hover:text-white transition-colors duration-200"
+                    >
+                      {link.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Services Column */}
+            <div>
+              <a href="/services" className="hover:no-underline">
+                <h3 className="text-lg font-playfair font-semibold mb-6 text-yellow-500 hover:text-yellow-400 transition-colors">
+                  Services
+                </h3>
+              </a>
+              <ul className="space-y-3">
+                {serviceLinks.map((link) => (
+                  <li key={link.name}>
+                    <a
+                      href={link.href}
+                      className="text-gray-300 hover:text-white transition-colors duration-200"
+                    >
+                      {link.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Help Column */}
+            <div>
+              <a href="/contact" className="hover:no-underline">
+                <h3 className="text-lg font-playfair font-semibold mb-6 text-yellow-500 hover:text-yellow-400 transition-colors">
+                  Help
+                </h3>
+              </a>
+              <ul className="space-y-3">
+                {helpLinks.map((link) => (
+                  <li key={link.name}>
+                    <a
+                      href={link.href}
+                      className="text-gray-300 hover:text-white transition-colors duration-200"
+                    >
+                      {link.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Contact Info */}
+          <div className="border-t border-ivory/20 mt-12 pt-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center md:text-left">
+              <div className="flex items-center justify-center md:justify-start">
+                <Phone className="h-5 w-5 text-yellow-500 mr-3" />
+                <div>
+                  <div className="font-semibold">Call Us</div>
+                  <div className="text-ivory/80">+91 82204 21317</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-center md:justify-start">
+                <Mail className="h-5 w-5 text-yellow-500 mr-3" />
+                <div>
+                  <div className="font-semibold">Email</div>
+                  <div className="text-ivory/80">inforjrb@gmail.com</div>
+                </div>
+              </div>
+              
+              <div className="flex items-start justify-center md:justify-start">
+                <MapPin className="h-5 w-5 text-yellow-500 mr-3 mt-1" />
+                <div>
+                  <div className="font-semibold">Address</div>
+                  <div className="text-ivory/80 text-sm leading-relaxed">
+                    No: 1539, 1st Floor,<br />
+                    Soundar Complex, Vellore Road<br />
+                    Near Anna Arch<br />
+                    Thiruvannamalai<br />
+                    Tamil Nadu - 606604
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Social Links */}
+          <div className="flex justify-center space-x-6 mt-8">
+            <a href="#" className="text-ivory/80 hover:text-yellow-500 transition-colors">
+              <span className="sr-only">Facebook</span>
+              <Facebook className="h-6 w-6" />
+            </a>
+            <a href="#" className="text-ivory/80 hover:text-yellow-500 transition-colors">
+              <span className="sr-only">Instagram</span>
+              <Instagram className="h-6 w-6" />
+            </a>
+            <a href="#" className="text-ivory/80 hover:text-yellow-500 transition-colors">
+              <span className="sr-only">WhatsApp</span>
+              <MessageCircle className="h-6 w-6" />
+            </a>
+          </div>
+
+          {/* Policy Links */}
+          <div className="border-t border-ivory/20 mt-8 pt-8">
+            <div className="flex flex-wrap justify-center gap-6 text-sm text-ivory/80">
+              <PolicyLinks />
+            </div>
+          </div>
+
+          {/* Copyright */}
+          <div className="mt-8 text-center text-ivory/60 text-sm">
+            &copy; {new Date().getFullYear()} JRB Gold. All rights reserved.
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+};
+
+export default Footer;

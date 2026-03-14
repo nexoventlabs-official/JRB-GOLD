@@ -1,0 +1,20 @@
+{
+  "name": "JRB Gold Private Limited",
+  "short_name": "JRB Gold",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#d4a537",
+  "icons": [
+    {
+      "src": "/logo1.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo1.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

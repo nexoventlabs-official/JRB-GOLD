@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    {
+      "source": "/((?!api).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "env": {
+    "VITE_BACKEND_URL": "https://jrb-gold-4azo.onrender.com"
+  }
+}

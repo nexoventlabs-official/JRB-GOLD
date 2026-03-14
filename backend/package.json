@@ -1,0 +1,29 @@
+{
+  "name": "jrb-gold-backend",
+  "version": "1.0.0",
+  "description": "JRB Gold Payment Backend - Handles Paytm callbacks and redirects to Vercel frontend",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.3.1",
+    "express": "^4.18.2",
+    "paytmchecksum": "^1.5.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "payment",
+    "paytm",
+    "callback",
+    "express",
+    "jrb-gold"
+  ],
+  "author": "JRB Gold",
+  "license": "MIT"
+}

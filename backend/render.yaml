@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: jrb-gold-backend
+    env: node
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: "production"
+      - key: BACKEND_URL
+        value: "https://jrb-gold-4azo.onrender.com"
+      - key: FRONTEND_URL
+        value: "https://jrb-gold.vercel.app"
+      - key: CORS_ORIGINS
+        value: "https://jrb-gold.vercel.app,https://jrb-gold-56cs.vercel.app,https://www.jrbgold.co.in,https://jrbgold.co.in,http://localhost:5173,http://localhost:8080"
+      # IMPORTANT: Set these via Render Dashboard > Environment, NOT here
+      # PAYTM_MERCHANT_ID, PAYTM_MERCHANT_KEY, PAYTM_ENVIRONMENT,
+      # PAYTM_WEBSITE, PAYTM_INDUSTRY_TYPE, PAYTM_CHANNEL_ID
