@@ -36,15 +36,26 @@ const PAYTM_CHANNEL_ID = process.env.PAYTM_CHANNEL_ID || 'WEB';
 // Middleware
 // ============================
 
-const corsOrigins = process.env.CORS_ORIGINS
-  ? process.env.CORS_ORIGINS.split(',').map(s => s.trim().replace(/\/+$/, ''))
-  : [
-    'http://localhost:5173',
-    'http://localhost:8080',
-    'https://jrb-gold-topaz.vercel.app',
-    'https://www.jrbgold.co.in',
-    'https://jrbgold.co.in'
-  ];
+// Parse CORS origins - clean up common issues (trailing slashes, KEY= prefix, whitespace)
+let corsOrigins = [
+  'http://localhost:5173',
+  'http://localhost:8080',
+  'https://jrb-gold-topaz.vercel.app',
+  'https://www.jrbgold.co.in',
+  'https://jrbgold.co.in'
+];
+
+if (process.env.CORS_ORIGINS) {
+  corsOrigins = process.env.CORS_ORIGINS
+    .split(',')
+    .map(s => s.trim().replace(/\/+$/, '').replace(/^CORS_ORIGINS=/, ''));
+}
+
+// Always allow FRONTEND_URL as a CORS origin
+const frontendOrigin = FRONTEND_URL.replace(/\/+$/, '');
+if (!corsOrigins.includes(frontendOrigin)) {
+  corsOrigins.push(frontendOrigin);
+}
 
 console.log('CORS allowed origins:', corsOrigins);
 
