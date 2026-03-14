@@ -1,7 +1,9 @@
 // Backend Server for JRB Gold - Paytm Payment Gateway
-// Uses Paytm classic form flow with official paytmchecksum SDK
+// Supports both Transaction API (modern) and Classic form flow
+// Uses official paytmchecksum SDK
 
 import express from 'express';
+import https from 'https';
 import { createRequire } from 'module';
 import dotenv from 'dotenv';
 
@@ -30,7 +32,7 @@ const PAYTM_CHANNEL_ID = process.env.PAYTM_CHANNEL_ID || 'WEB';
 const PAYTM_HOST = PAYTM_ENVIRONMENT === 'production' ? 'securegw.paytm.in' : 'securegw-stage.paytm.in';
 const PAYTM_TXN_URL = `https://${PAYTM_HOST}/order/process`;
 
-// In-memory store for payment params (used for redirect page)
+// In-memory store for payment params (used for classic flow redirect)
 const pendingPayments = new Map();
 
 // ============================
@@ -75,6 +77,45 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ============================
+// Helper: make HTTPS POST request to Paytm
+// ============================
+function paytmPost(path, postData) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(postData);
+    const options = {
+      hostname: PAYTM_HOST,
+      port: 443,
+      path: path,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(data)
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      let body = '';
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(body));
+        } catch (e) {
+          reject(new Error(`Invalid JSON from Paytm: ${body.substring(0, 500)}`));
+        }
+      });
+    });
+
+    req.on('error', reject);
+    req.setTimeout(30000, () => {
+      req.destroy();
+      reject(new Error('Paytm API request timed out'));
+    });
+    req.write(data);
+    req.end();
+  });
+}
+
+// ============================
 // API Endpoints
 // ============================
 
@@ -82,7 +123,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     message: 'JRB Gold Payment Backend is running',
-    version: 'v4-classic-flow',
+    version: 'v5-dual-flow',
     environment: PAYTM_ENVIRONMENT,
     gateway: PAYTM_HOST,
     corsOrigins: corsOrigins,
@@ -104,10 +145,7 @@ app.get('/', (req, res) => {
 });
 
 // ============================
-// Initiate Payment — Classic Paytm flow
-// 1. Generate checksum on flat params object
-// 2. Store params, return redirect URL to our form page
-// 3. Form page auto-submits to Paytm gateway
+// Initiate Payment — tries Transaction API first, falls back to classic
 // ============================
 app.post('/api/initiate-payment', async (req, res) => {
   try {
@@ -135,7 +173,67 @@ app.post('/api/initiate-payment', async (req, res) => {
     const txnAmount = parseFloat(amount).toFixed(2);
     const custId = customerId.toString().replace(/[^a-zA-Z0-9_@.]/g, '_').substring(0, 64);
 
-    // Build flat params object for classic Paytm flow
+    // ---- Try Transaction API first ----
+    console.log('Trying Transaction API...');
+    try {
+      const paytmBody = {
+        requestType: 'Payment',
+        mid: M_ID,
+        websiteName: PAYTM_WEBSITE.trim(),
+        orderId: ordIdStr,
+        callbackUrl: `${backendUrl}/payment/callback`,
+        txnAmount: {
+          value: txnAmount,
+          currency: 'INR'
+        },
+        userInfo: {
+          custId: custId
+        }
+      };
+
+      if (email) paytmBody.userInfo.email = email;
+      if (mobile) paytmBody.userInfo.mobile = mobile;
+
+      const checksum = await PaytmChecksum.generateSignature(
+        JSON.stringify(paytmBody),
+        M_KEY
+      );
+
+      const initUrl = `/theia/api/v1/initiateTransaction?mid=${M_ID}&orderId=${ordIdStr}`;
+      const paytmResponse = await paytmPost(initUrl, {
+        body: paytmBody,
+        head: { signature: checksum }
+      });
+
+      console.log('Transaction API response:', JSON.stringify(paytmResponse, null, 2));
+
+      if (paytmResponse.body?.resultInfo?.resultStatus === 'S') {
+        const txnToken = paytmResponse.body.txnToken;
+        const paymentPageUrl = `https://${PAYTM_HOST}/theia/api/v1/showPaymentPage?mid=${M_ID}&orderId=${ordIdStr}&txnToken=${txnToken}`;
+
+        console.log('Transaction API SUCCESS - got txnToken');
+        console.log('=== PAYMENT INITIATED (TXN API) ===\n');
+
+        return res.json({
+          success: true,
+          redirectUrl: paymentPageUrl,
+          orderId: ordIdStr,
+          environment: PAYTM_ENVIRONMENT,
+          flow: 'txn-api'
+        });
+      }
+
+      const resultCode = paytmResponse.body?.resultInfo?.resultCode || 'UNKNOWN';
+      const resultMsg = paytmResponse.body?.resultInfo?.resultMsg || 'Unknown';
+      console.log(`Transaction API failed: ${resultCode} - ${resultMsg}`);
+      console.log('Falling back to classic flow...');
+
+    } catch (txnError) {
+      console.log('Transaction API error:', txnError.message);
+      console.log('Falling back to classic flow...');
+    }
+
+    // ---- Fallback: Classic form flow ----
     const paytmParams = {
       MID: M_ID,
       WEBSITE: PAYTM_WEBSITE.trim(),
@@ -150,9 +248,9 @@ app.post('/api/initiate-payment', async (req, res) => {
     if (email) paytmParams.EMAIL = email;
     if (mobile) paytmParams.MOBILE_NO = mobile;
 
-    console.log('Payment params:', JSON.stringify(paytmParams, null, 2));
+    console.log('Classic flow params:', JSON.stringify(paytmParams, null, 2));
 
-    // Generate checksum on the flat params object (NOT JSON string)
+    // Generate checksum on flat params object
     const checksum = await PaytmChecksum.generateSignature(paytmParams, M_KEY);
     paytmParams.CHECKSUMHASH = checksum;
 
@@ -172,13 +270,14 @@ app.post('/api/initiate-payment', async (req, res) => {
 
     const redirectUrl = `${backendUrl}/payment/redirect/${ordIdStr}`;
     console.log('Redirect URL:', redirectUrl);
-    console.log('=== PAYMENT INITIATED SUCCESSFULLY ===\n');
+    console.log('=== PAYMENT INITIATED (CLASSIC) ===\n');
 
     res.json({
       success: true,
       redirectUrl: redirectUrl,
       orderId: ordIdStr,
-      environment: PAYTM_ENVIRONMENT
+      environment: PAYTM_ENVIRONMENT,
+      flow: 'classic'
     });
 
   } catch (error) {
@@ -191,7 +290,7 @@ app.post('/api/initiate-payment', async (req, res) => {
 });
 
 // ============================
-// Payment redirect page — auto-submitting form to Paytm
+// Payment redirect page — auto-submitting form to Paytm (classic flow)
 // ============================
 app.get('/payment/redirect/:orderId', (req, res) => {
   const orderId = req.params.orderId;
@@ -332,11 +431,8 @@ app.get('/test/checksum', async (req, res) => {
     };
 
     const checksum = await PaytmChecksum.generateSignature(testParams, PAYTM_MERCHANT_KEY);
-
-    // Self-verify the checksum
     const isValid = await PaytmChecksum.verifySignature(testParams, PAYTM_MERCHANT_KEY, checksum);
 
-    // Debug: show key details (masked) to verify key on Render
     const keyHex = Buffer.from(PAYTM_MERCHANT_KEY).toString('hex');
 
     res.json({
@@ -357,10 +453,55 @@ app.get('/test/checksum', async (req, res) => {
   }
 });
 
+// Test Transaction API directly
+app.get('/test/txn-api', async (req, res) => {
+  try {
+    const M_ID = PAYTM_MERCHANT_ID.trim();
+    const M_KEY = PAYTM_MERCHANT_KEY.trim();
+    const ordId = 'TEST_' + Date.now();
+    const backendUrl = process.env.BACKEND_URL || 'https://jrb-gold-zvna.onrender.com';
+
+    const paytmBody = {
+      requestType: 'Payment',
+      mid: M_ID,
+      websiteName: PAYTM_WEBSITE.trim(),
+      orderId: ordId,
+      callbackUrl: `${backendUrl}/payment/callback`,
+      txnAmount: {
+        value: '1.00',
+        currency: 'INR'
+      },
+      userInfo: {
+        custId: 'test_user'
+      }
+    };
+
+    const checksum = await PaytmChecksum.generateSignature(
+      JSON.stringify(paytmBody),
+      M_KEY
+    );
+
+    const initUrl = `/theia/api/v1/initiateTransaction?mid=${M_ID}&orderId=${ordId}`;
+    const paytmResponse = await paytmPost(initUrl, {
+      body: paytmBody,
+      head: { signature: checksum }
+    });
+
+    res.json({
+      success: paytmResponse.body?.resultInfo?.resultStatus === 'S',
+      paytmResponse: paytmResponse,
+      callbackUrl: `${backendUrl}/payment/callback`,
+      orderId: ordId
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.get('/api', (req, res) => {
   res.json({
     message: 'JRB Gold Payment Backend API',
-    version: 'v4-classic-flow',
+    version: 'v5-dual-flow',
     endpoints: {
       health: '/api/health',
       config: '/api/config',
@@ -369,7 +510,8 @@ app.get('/api', (req, res) => {
       callback: '/payment/callback (POST)',
       testSuccess: '/test/callback',
       testFail: '/test/callback-fail',
-      testChecksum: '/test/checksum'
+      testChecksum: '/test/checksum',
+      testTxnApi: '/test/txn-api'
     },
     frontend: FRONTEND_URL
   });
