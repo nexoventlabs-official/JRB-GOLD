@@ -1,111 +1,67 @@
-# JRB Gold Backend - Payment Callback Handler
+# JRB Gold Backend - Payment Gateway Server
 
 ## Overview
-Express.js backend server that handles Paytm payment callbacks and redirects to the Vercel frontend.
-
-## Features
-- ✅ Handles POST callbacks from Paytm
-- ✅ CORS configured for multiple domains
-- ✅ Redirects to Vercel frontend with query parameters
-- ✅ Health check endpoint
-- ✅ Test callback endpoint
+Express.js backend that handles Paytm payment integration — checksum generation, payment form serving, and callback handling.
 
 ## Deployment to Render
 
-### Option 1: Using render.yaml (Recommended)
-1. Push this backend folder to your GitHub repo
-2. Go to Render.com → New Web Service
-3. Connect your GitHub repo
-4. Select **Root Directory**: `backend`
-5. Render will automatically use the `render.yaml` configuration
-
-### Option 2: Manual Setup
+### Setup
 1. Go to Render.com → New Web Service
-2. Connect your GitHub repo
+2. Connect your GitHub repo: `nexoventlabs-official/JRB-GOLD`
 3. Configure:
    - **Name**: `jrb-gold-backend`
    - **Root Directory**: `backend`
    - **Environment**: `Node`
    - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
+   - **Start Command**: `node server.js`
    - **Plan**: Free
 
-### Environment Variables
-Add these in Render dashboard or they're auto-configured via render.yaml:
+### Environment Variables (set in Render Dashboard)
 ```
 NODE_ENV=production
-FRONTEND_URL=https://jrb-gold-56cs.vercel.app
-CORS_ORIGINS=https://jrb-gold-56cs.vercel.app,http://localhost:5173,http://localhost:8080,https://www.jrbgold.co.in
-VITE_MERCHANT_ID=nfvifF32655861820763
-VITE_MERCHANT_KEY=7x3aqULKxZe&Sj7V
-VITE_PAYMENT_ENV=production
+BACKEND_URL=https://jrb-gold-zvna.onrender.com
+FRONTEND_URL=https://jrb-gold-topaz.vercel.app
+CORS_ORIGINS=https://jrb-gold-topaz.vercel.app,https://www.jrbgold.co.in,https://jrbgold.co.in
+PAYTM_MERCHANT_ID=<your-merchant-id>
+PAYTM_MERCHANT_KEY=<your-merchant-key>
+PAYTM_ENVIRONMENT=production
+PAYTM_WEBSITE=DEFAULT
+PAYTM_INDUSTRY_TYPE=Retail
+PAYTM_CHANNEL_ID=WEB
 ```
 
 ## API Endpoints
 
-### Health Check
-```
-GET /api/health
-Response: {"status":"ok","message":"JRB Gold Payment Backend is running"}
-```
-
-### Payment Callback (Paytm)
-```
-POST /payment/callback
-- Receives POST data from Paytm
-- Redirects to frontend with query parameters
-```
-
-### Test Callback
-```
-GET /test/callback
-- Simulates a successful payment callback
-- Redirects to frontend with test data
-```
-
-### Root
-```
-GET /
-Response: API information and available endpoints
-```
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/` | Health check (text) |
+| GET | `/api/health` | Health check (JSON) |
+| GET | `/api/config` | Non-sensitive config for frontend |
+| POST | `/api/initiate-payment` | Generate checksum, return redirect URL |
+| GET | `/payment/redirect/:orderId` | Serve auto-submitting form to Paytm |
+| POST | `/payment/callback` | Receive Paytm callback, redirect to frontend |
+| GET | `/test/callback` | Test success callback |
+| GET | `/test/callback-fail` | Test failure callback |
+| GET | `/test/checksum` | Test checksum generation |
 
 ## Local Development
 ```bash
 cd backend
 npm install
-npm start
+node server.js
 ```
-
 Server runs on `http://localhost:3001`
 
-## Production URLs
-- **Backend**: `https://jrb-gold-backend.onrender.com`
-- **Frontend**: `https://jrb-gold-56cs.vercel.app`
-
 ## Payment Flow
-1. User completes payment on Paytm
-2. Paytm sends POST to `https://jrb-gold-backend.onrender.com/payment/callback`
-3. Backend extracts payment data
-4. Backend redirects to `https://jrb-gold-56cs.vercel.app/payment/callback?status=...`
-5. Frontend shows payment result
-
-## CORS Configuration
-Configured to allow requests from:
-- `https://jrb-gold-56cs.vercel.app` (Production frontend)
-- `https://www.jrbgold.co.in` (Custom domain)
-- `http://localhost:5173` (Local Vite dev)
-- `http://localhost:8080` (Local Vite alt port)
+1. Frontend calls `POST /api/initiate-payment` with order details
+2. Backend generates Paytm checksum, stores params, returns redirect URL
+3. Browser loads `/payment/redirect/:orderId` — auto-submitting form to Paytm
+4. User completes payment on Paytm
+5. Paytm POSTs to `/payment/callback`
+6. Backend verifies checksum, redirects to frontend with payment status
 
 ## Dependencies
-- `express`: Web server framework
-- `cors`: Cross-origin resource sharing
-
-## File Structure
-```
-backend/
-├── server.js          # Main server file
-├── package.json       # Dependencies and scripts
-├── render.yaml        # Render deployment config
-├── .env              # Environment variables
-└── README.md         # This file
-```
+- `express` — Web server
+- `cors` — Cross-origin support
+- `dotenv` — Environment variables
+- `paytmchecksum` — Official Paytm checksum SDK
