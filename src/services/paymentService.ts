@@ -1,7 +1,7 @@
 // Payment Gateway Service for JRB Gold - Paytm Integration
 // All sensitive config lives on the backend. Frontend only needs the backend URL.
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://jrb-gold-4azo.onrender.com';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://jrb-gold-zvna.onrender.com';
 
 export interface PaymentRequest {
   orderId: string;
