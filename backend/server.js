@@ -498,6 +498,122 @@ app.get('/test/txn-api', async (req, res) => {
   }
 });
 
+// Direct server-to-server POST to Paytm (bypasses browser)
+app.get('/test/direct-post', async (req, res) => {
+  try {
+    const M_ID = PAYTM_MERCHANT_ID.trim();
+    const M_KEY = PAYTM_MERCHANT_KEY.trim();
+    const ordId = 'DIRECT_' + Date.now();
+    const backendUrl = process.env.BACKEND_URL || 'https://jrb-gold-zvna.onrender.com';
+
+    const paytmParams = {
+      MID: M_ID,
+      WEBSITE: PAYTM_WEBSITE.trim(),
+      INDUSTRY_TYPE_ID: PAYTM_INDUSTRY_TYPE.trim(),
+      CHANNEL_ID: PAYTM_CHANNEL_ID.trim(),
+      ORDER_ID: ordId,
+      CUST_ID: 'test_user',
+      TXN_AMOUNT: '1.00',
+      CALLBACK_URL: `${backendUrl}/payment/callback`,
+    };
+
+    const checksum = await PaytmChecksum.generateSignature(paytmParams, M_KEY);
+    paytmParams.CHECKSUMHASH = checksum;
+
+    // Build URL-encoded form body (same way a browser would)
+    const formBody = Object.entries(paytmParams)
+      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+      .join('&');
+
+    // Show the exact string used for checksum generation
+    const sortedKeys = Object.keys(paytmParams).filter(k => k !== 'CHECKSUMHASH').sort();
+    const checksumInputString = sortedKeys.map(k => paytmParams[k]).join('|');
+
+    // POST directly to Paytm's /order/process
+    const result = await new Promise((resolve, reject) => {
+      const options = {
+        hostname: PAYTM_HOST,
+        port: 443,
+        path: '/order/process',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Length': Buffer.byteLength(formBody)
+        }
+      };
+
+      const req = https.request(options, (response) => {
+        let body = '';
+        const statusCode = response.statusCode;
+        const headers = response.headers;
+        response.on('data', (chunk) => { body += chunk; });
+        response.on('end', () => {
+          resolve({
+            statusCode,
+            headers: {
+              contentType: headers['content-type'],
+              location: headers['location'],
+            },
+            bodyPreview: body.substring(0, 1000),
+            bodyLength: body.length
+          });
+        });
+      });
+
+      req.on('error', reject);
+      req.setTimeout(30000, () => {
+        req.destroy();
+        reject(new Error('Request timed out'));
+      });
+      req.write(formBody);
+      req.end();
+    });
+
+    res.json({
+      success: true,
+      orderId: ordId,
+      params: paytmParams,
+      checksumInputString: checksumInputString,
+      checksum: checksum,
+      paytmResponse: result
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Check order status via Paytm API
+app.get('/test/order-status/:orderId', async (req, res) => {
+  try {
+    const M_ID = PAYTM_MERCHANT_ID.trim();
+    const M_KEY = PAYTM_MERCHANT_KEY.trim();
+    const ordId = req.params.orderId;
+
+    const paytmBody = {
+      mid: M_ID,
+      orderId: ordId,
+    };
+
+    const checksum = await PaytmChecksum.generateSignature(
+      JSON.stringify(paytmBody),
+      M_KEY
+    );
+
+    const statusResponse = await paytmPost('/v3/order/status', {
+      body: paytmBody,
+      head: { signature: checksum }
+    });
+
+    res.json({
+      success: true,
+      orderId: ordId,
+      paytmResponse: statusResponse
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.get('/api', (req, res) => {
   res.json({
     message: 'JRB Gold Payment Backend API',
