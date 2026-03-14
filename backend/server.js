@@ -336,10 +336,15 @@ app.get('/test/checksum', async (req, res) => {
     // Self-verify the checksum
     const isValid = await PaytmChecksum.verifySignature(testParams, PAYTM_MERCHANT_KEY, checksum);
 
+    // Debug: show key details (masked) to verify key on Render
+    const keyHex = Buffer.from(PAYTM_MERCHANT_KEY).toString('hex');
+
     res.json({
       success: true,
       merchantId: PAYTM_MERCHANT_ID,
       merchantKeyLength: PAYTM_MERCHANT_KEY.length,
+      merchantKeyPreview: PAYTM_MERCHANT_KEY.substring(0, 4) + '****' + PAYTM_MERCHANT_KEY.substring(PAYTM_MERCHANT_KEY.length - 4),
+      merchantKeyHex: keyHex.substring(0, 8) + '...' + keyHex.substring(keyHex.length - 8),
       checksumGenerated: checksum.substring(0, 30) + '...',
       selfVerified: isValid,
       gateway: PAYTM_HOST,
