@@ -37,8 +37,8 @@ const PAYTM_CHANNEL_ID = process.env.PAYTM_CHANNEL_ID || 'WEB';
 // Middleware
 // ============================
 
-const corsOrigins = process.env.CORS_ORIGINS 
-  ? process.env.CORS_ORIGINS.split(',')
+const corsOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
   : [
     'http://localhost:5173',
     'http://localhost:8080',
@@ -47,8 +47,18 @@ const corsOrigins = process.env.CORS_ORIGINS
     'https://jrbgold.co.in'
   ];
 
+console.log('CORS allowed origins:', corsOrigins);
+
 app.use(cors({
-  origin: corsOrigins,
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
+    if (corsOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    console.warn('CORS blocked origin:', origin);
+    return callback(null, false);
+  },
   credentials: true
 }));
 
