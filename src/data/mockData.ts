@@ -116,23 +116,20 @@ export const mockProducts: Product[] = [
   },
   {
     id: 'prod-007',
-    name: 'Lucky Coin - Special Edition',
+    name: 'Lucky Gold Coin - Ganesh',
     category: 'Coins',
-    subcategory: 'Special',
+    subcategory: 'Religious',
     price: 1,
-    originalPrice: 1,
-    image: '/lucky-coin.jpg',
-    images: ['/lucky-coin.jpg'],
-    description: 'Special promotional lucky coin - Limited time offer at ₹1 only! Perfect for gifting and bringing good fortune.',
-    purity: 'Brass',
-    weight: '1g',
+    image: '/product-coin.jpg',
+    images: ['/product-coin.jpg'],
+    description: 'Miniature 24K pure gold coin with Lord Ganesh design. A symbol of good luck and prosperity, perfect for gifting on auspicious occasions.',
+    purity: '24K Gold',
+    weight: '0.1g',
     making_charges: '₹0',
-    rating: 5,
-    reviews: 1250,
+    rating: 5.0,
+    reviews: 312,
     inStock: true,
-    isNew: true,
-    isBestSeller: true,
-    discount: 0
+    isNew: true
   }
 ];
 

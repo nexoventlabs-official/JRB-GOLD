@@ -4,6 +4,7 @@ import { CreditCard, Banknote, CheckCircle, Package, Calendar, Loader2 } from "l
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { paymentService } from "@/services/paymentService";
@@ -94,6 +95,46 @@ export default function Checkout() {
   const [showOrderConfirmation, setShowOrderConfirmation] = useState(false);
   const [orderDetails, setOrderDetails] = useState<any>(null);
 
+  // Save address state
+  const [saveAddress, setSaveAddress] = useState(false);
+
+  // Form fields state for save/load address
+  const [formFields, setFormFields] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    zip: '',
+  });
+
+  // Load saved address from localStorage on mount
+  useEffect(() => {
+    const savedAddress = localStorage.getItem('savedShippingAddress');
+    if (savedAddress) {
+      try {
+        const parsed = JSON.parse(savedAddress);
+        setSaveAddress(true);
+        setFormFields({
+          firstName: parsed.firstName || '',
+          lastName: parsed.lastName || '',
+          email: parsed.email || '',
+          phone: parsed.phone || '',
+          address: parsed.address || '',
+          city: parsed.city || '',
+          zip: parsed.zip || '',
+        });
+        if (parsed.country) setSelectedCountry(parsed.country);
+        if (parsed.state) {
+          setTimeout(() => setSelectedState(parsed.state), 100);
+        }
+      } catch (e) {
+        // Invalid saved data, ignore
+      }
+    }
+  }, []);
+
   const subtotal = cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
   const tax = subtotal * taxRate;
   const shipping = 0; // Free shipping for G20 countries
@@ -126,16 +167,20 @@ export default function Checkout() {
       toast.error('Please select your country and state');
       return;
     }
-    
-    // Get form data
-    const formData = new FormData(e.target as HTMLFormElement);
-    const firstName = formData.get('firstName') as string;
-    const lastName = formData.get('lastName') as string;
-    const email = formData.get('email') as string;
-    const phone = formData.get('phone') as string;
-    const address = formData.get('address') as string;
-    const city = formData.get('city') as string;
-    const zip = formData.get('zip') as string;
+
+    const { firstName, lastName, email, phone, address, city, zip } = formFields;
+
+    // Save or remove address from localStorage based on checkbox
+    if (saveAddress) {
+      const addressToSave = {
+        firstName, lastName, email, phone, address, city, zip,
+        country: selectedCountry,
+        state: selectedState,
+      };
+      localStorage.setItem('savedShippingAddress', JSON.stringify(addressToSave));
+    } else {
+      localStorage.removeItem('savedShippingAddress');
+    }
     
     // Check if user is authenticated
     const authToken = localStorage.getItem('authToken');
@@ -274,13 +319,13 @@ export default function Checkout() {
                     <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
                       First Name
                     </label>
-                    <Input id="firstName" name="firstName" required />
+                    <Input id="firstName" name="firstName" value={formFields.firstName} onChange={e => setFormFields(f => ({...f, firstName: e.target.value}))} required />
                   </div>
                   <div>
                     <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
                       Last Name
                     </label>
-                    <Input id="lastName" name="lastName" required />
+                    <Input id="lastName" name="lastName" value={formFields.lastName} onChange={e => setFormFields(f => ({...f, lastName: e.target.value}))} required />
                   </div>
                 </div>
                 
@@ -288,14 +333,14 @@ export default function Checkout() {
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                     Email
                   </label>
-                  <Input id="email" name="email" type="email" required />
+                  <Input id="email" name="email" type="email" value={formFields.email} onChange={e => setFormFields(f => ({...f, email: e.target.value}))} required />
                 </div>
                 
                 <div>
                   <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                     Phone Number <span className="text-red-500">*</span>
                   </label>
-                  <Input id="phone" name="phone" type="tel" required />
+                  <Input id="phone" name="phone" type="tel" value={formFields.phone} onChange={e => setFormFields(f => ({...f, phone: e.target.value}))} required />
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -303,7 +348,7 @@ export default function Checkout() {
                     <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
                       Country <span className="text-red-500">*</span>
                     </label>
-                    <Select onValueChange={setSelectedCountry} required>
+                    <Select value={selectedCountry} onValueChange={setSelectedCountry} required>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a country" />
                       </SelectTrigger>
@@ -344,7 +389,7 @@ export default function Checkout() {
                   <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
                     Street Address <span className="text-red-500">*</span>
                   </label>
-                  <Input id="address" name="address" required />
+                  <Input id="address" name="address" value={formFields.address} onChange={e => setFormFields(f => ({...f, address: e.target.value}))} required />
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -352,16 +397,36 @@ export default function Checkout() {
                     <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
                       City <span className="text-red-500">*</span>
                     </label>
-                    <Input id="city" name="city" required />
+                    <Input id="city" name="city" value={formFields.city} onChange={e => setFormFields(f => ({...f, city: e.target.value}))} required />
                   </div>
                   <div>
                     <label htmlFor="zip" className="block text-sm font-medium text-gray-700 mb-1">
                       ZIP/Postal Code <span className="text-red-500">*</span>
                     </label>
-                    <Input id="zip" name="zip" required />
+                    <Input id="zip" name="zip" value={formFields.zip} onChange={e => setFormFields(f => ({...f, zip: e.target.value}))} required />
                   </div>
                 </div>
-                
+
+                {/* Save Address Checkbox */}
+                <div className="flex items-center space-x-2 pt-2 pb-2">
+                  <Checkbox
+                    id="saveAddress"
+                    checked={saveAddress}
+                    onCheckedChange={(checked) => {
+                      setSaveAddress(checked === true);
+                      if (!checked) {
+                        localStorage.removeItem('savedShippingAddress');
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor="saveAddress"
+                    className="text-sm font-medium text-gray-700 cursor-pointer"
+                  >
+                    Save this address for future orders
+                  </label>
+                </div>
+
                 <div className="pt-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Payment Method</h3>
                   

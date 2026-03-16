@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Filter, SlidersHorizontal, Grid3X3, List, Star, Heart, ShoppingCart, Eye, ChevronDown, Plus, Minus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCart } from "@/contexts/CartContext";
@@ -17,26 +17,37 @@ import productBangle from "@/assets/product-bangle.jpg";
 import productCoin from "@/assets/product-coin.jpg";
 import productNecklace from "@/assets/product-necklace.jpg";
 import silverBraceletSet from "@/assets/silver-bracelet-set.jpg";
-import { useParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 
 interface ShopProps {
 }
 
 const Shop: React.FC<ShopProps> = () => {
-  const { category } = useParams<{ category?: string }>();
+  const [searchParams] = useSearchParams();
+  const categoryFromUrl = searchParams.get('category');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [selectedCategory, setSelectedCategory] = useState<string>(category || '');
+  const [selectedCategory, setSelectedCategory] = useState<string>(categoryFromUrl || '');
   const [sortBy, setSortBy] = useState('newest');
-  const [priceRange, setPriceRange] = useState([500, 150000]);
-  const [weightRange, setWeightRange] = useState([1, 100]);
+  const [priceRange, setPriceRange] = useState([0, 500000]);
+  const [weightRange, setWeightRange] = useState([0, 200]);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const { addToCart, toggleFavorite, favorites } = useCart();
 
   const [filters, setFilters] = useState({
-    categories: [] as string[],
+    categories: categoryFromUrl ? [categoryFromUrl] : [] as string[],
     purities: [] as string[],
   });
+
+  // Sync filters when URL category changes
+  useEffect(() => {
+    if (categoryFromUrl) {
+      setFilters(prev => ({
+        ...prev,
+        categories: [categoryFromUrl],
+      }));
+    }
+  }, [categoryFromUrl]);
 
   // Quantity state for each product
   const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
@@ -164,20 +175,35 @@ const Shop: React.FC<ShopProps> = () => {
       description: "Traditional silver anklets with bell charms",
       sku: "JRB-SA-008",
     },
+    {
+      id: "9",
+      name: "Lucky Gold Coin - Ganesh",
+      category: "coins",
+      subcategory: "religious",
+      purity: "24k",
+      price: 1,
+      weight: 0.1,
+      makingCharges: 0,
+      image: productCoin,
+      rating: { avg: 5.0, count: 312 },
+      badges: ["new", "certified"],
+      description: "Miniature 24K pure gold coin with Lord Ganesh design. A symbol of good luck and prosperity, perfect for gifting on auspicious occasions.",
+      sku: "JRB-GC-009",
+    },
   ];
 
   const categories = [
-    { id: 'gold', name: 'Gold Jewelry', count: 5 },
-    { id: 'silver', name: 'Silver Jewelry', count: 3 },
-    { id: 'coins', name: 'Gold Coins', count: 1 },
-    { id: 'ornaments', name: 'Ornaments', count: 0 },
+    { id: 'gold', name: 'Gold Jewelry', count: products.filter(p => p.category === 'gold').length },
+    { id: 'silver', name: 'Silver Jewelry', count: products.filter(p => p.category === 'silver').length },
+    { id: 'coins', name: 'Gold Coins', count: products.filter(p => p.category === 'coins').length },
+    { id: 'ornaments', name: 'Ornaments', count: products.filter(p => p.category === 'ornaments').length },
   ];
 
   const purities = [
-    { id: '24k', name: '24K Gold', count: 1 },
-    { id: '22k', name: '22K Gold', count: 4 },
-    { id: '18k', name: '18K Gold', count: 0 },
-    { id: 'pure-silver', name: 'Pure Silver', count: 3 },
+    { id: '24k', name: '24K Gold', count: products.filter(p => p.purity === '24k').length },
+    { id: '22k', name: '22K Gold', count: products.filter(p => p.purity === '22k').length },
+    { id: '18k', name: '18K Gold', count: products.filter(p => p.purity === '18k').length },
+    { id: 'pure-silver', name: 'Pure Silver', count: products.filter(p => p.purity === 'pure-silver').length },
   ];
 
   const formatPrice = (price: number) => {
@@ -335,9 +361,9 @@ const Shop: React.FC<ShopProps> = () => {
         <Slider
           value={priceRange}
           onValueChange={setPriceRange}
-          max={100000}
-          min={1000}
-          step={1000}
+          max={500000}
+          min={0}
+          step={1}
           className="w-full"
         />
       </div>
@@ -350,9 +376,9 @@ const Shop: React.FC<ShopProps> = () => {
         <Slider
           value={weightRange}
           onValueChange={setWeightRange}
-          max={50}
-          min={1}
-          step={0.5}
+          max={200}
+          min={0}
+          step={0.1}
           className="w-full"
         />
       </div>
