@@ -113,6 +113,26 @@ export const mockProducts: Product[] = [
     inStock: true,
     isBestSeller: true,
     discount: 6
+  },
+  {
+    id: 'prod-007',
+    name: 'Lucky Coin - Special Edition',
+    category: 'Coins',
+    subcategory: 'Special',
+    price: 1,
+    originalPrice: 1,
+    image: '/lucky-coin.jpg',
+    images: ['/lucky-coin.jpg'],
+    description: 'Special promotional lucky coin - Limited time offer at ₹1 only! Perfect for gifting and bringing good fortune.',
+    purity: 'Brass',
+    weight: '1g',
+    making_charges: '₹0',
+    rating: 5,
+    reviews: 1250,
+    inStock: true,
+    isNew: true,
+    isBestSeller: true,
+    discount: 0
   }
 ];
 

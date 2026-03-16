@@ -1,0 +1,41 @@
+<svg width="800" height="800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="800" height="800" fill="#f5f5f5"/>
+  
+  <!-- Outer coin circle -->
+  <circle cx="400" cy="400" r="300" fill="#FFD700" stroke="#DAA520" stroke-width="8"/>
+  
+  <!-- Inner decorative circle -->
+  <circle cx="400" cy="400" r="280" fill="none" stroke="#DAA520" stroke-width="4"/>
+  <circle cx="400" cy="400" r="260" fill="none" stroke="#DAA520" stroke-width="2"/>
+  
+  <!-- Decorative pattern around edge -->
+  <circle cx="400" cy="100" r="15" fill="#DAA520"/>
+  <circle cx="550" cy="150" r="15" fill="#DAA520"/>
+  <circle cx="650" cy="250" r="15" fill="#DAA520"/>
+  <circle cx="700" cy="400" r="15" fill="#DAA520"/>
+  <circle cx="650" cy="550" r="15" fill="#DAA520"/>
+  <circle cx="550" cy="650" r="15" fill="#DAA520"/>
+  <circle cx="400" cy="700" r="15" fill="#DAA520"/>
+  <circle cx="250" cy="650" r="15" fill="#DAA520"/>
+  <circle cx="150" cy="550" r="15" fill="#DAA520"/>
+  <circle cx="100" cy="400" r="15" fill="#DAA520"/>
+  <circle cx="150" cy="250" r="15" fill="#DAA520"/>
+  <circle cx="250" cy="150" r="15" fill="#DAA520"/>
+  
+  <!-- Center star -->
+  <path d="M 400 250 L 420 310 L 485 310 L 435 350 L 455 410 L 400 370 L 345 410 L 365 350 L 315 310 L 380 310 Z" 
+        fill="#DAA520" stroke="#B8860B" stroke-width="2"/>
+  
+  <!-- Text: ₹1 -->
+  <text x="400" y="480" font-family="Arial, sans-serif" font-size="80" font-weight="bold" 
+        text-anchor="middle" fill="#B8860B">₹1</text>
+  
+  <!-- Text: LUCKY -->
+  <text x="400" y="540" font-family="Arial, sans-serif" font-size="40" font-weight="bold" 
+        text-anchor="middle" fill="#B8860B">LUCKY</text>
+  
+  <!-- Shine effect -->
+  <ellipse cx="320" cy="320" rx="80" ry="120" fill="white" opacity="0.3" 
+           transform="rotate(-30 320 320)"/>
+</svg>
