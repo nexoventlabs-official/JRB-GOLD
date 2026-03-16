@@ -28,8 +28,8 @@ const PAYTM_WEBSITE = process.env.PAYTM_WEBSITE || (PAYTM_ENVIRONMENT === 'produ
 const PAYTM_INDUSTRY_TYPE = process.env.PAYTM_INDUSTRY_TYPE || 'Retail';
 const PAYTM_CHANNEL_ID = process.env.PAYTM_CHANNEL_ID || 'WEB';
 
-// Gateway URLs
-const PAYTM_HOST = PAYTM_ENVIRONMENT === 'production' ? 'securegw.paytm.in' : 'securegw-stage.paytm.in';
+// Gateway URLs - using paytmpayments.com domain (new Paytm Payments platform)
+const PAYTM_HOST = PAYTM_ENVIRONMENT === 'production' ? 'secure.paytmpayments.com' : 'securestage.paytmpayments.com';
 const PAYTM_TXN_URL = `https://${PAYTM_HOST}/order/process`;
 
 // In-memory store for payment params (used for classic flow redirect)
