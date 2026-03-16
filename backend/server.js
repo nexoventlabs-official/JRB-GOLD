@@ -614,6 +614,100 @@ app.get('/test/order-status/:orderId', async (req, res) => {
   }
 });
 
+// Comprehensive Paytm diagnostic - tests credentials against Paytm server
+app.get('/test/paytm-diagnose', async (req, res) => {
+  try {
+    const M_KEY = PAYTM_MERCHANT_KEY.trim();
+    const M_ID = PAYTM_MERCHANT_ID.trim();
+    const backendUrl = process.env.BACKEND_URL || 'https://jrb-gold-zvna.onrender.com';
+    const ordId = 'DIAG_' + Date.now();
+
+    const results = { merchantId: M_ID, keyLength: M_KEY.length, gateway: PAYTM_HOST, website: PAYTM_WEBSITE };
+
+    // Test 1: Transaction API
+    try {
+      const txnBody = {
+        requestType: 'Payment', mid: M_ID, websiteName: PAYTM_WEBSITE.trim(),
+        orderId: ordId, callbackUrl: `${backendUrl}/payment/callback`,
+        txnAmount: { value: '1.00', currency: 'INR' },
+        userInfo: { custId: 'diag_test' }
+      };
+      const txnChecksum = await PaytmChecksum.generateSignature(JSON.stringify(txnBody), M_KEY);
+      const txnResponse = await paytmPost(`/theia/api/v1/initiateTransaction?mid=${M_ID}&orderId=${ordId}`, {
+        body: txnBody, head: { signature: txnChecksum }
+      });
+      results.transactionAPI = {
+        resultCode: txnResponse.body?.resultInfo?.resultCode,
+        resultMsg: txnResponse.body?.resultInfo?.resultMsg,
+        success: txnResponse.body?.resultInfo?.resultStatus === 'S'
+      };
+    } catch (e) { results.transactionAPI = { error: e.message }; }
+
+    // Test 2: Classic flow checksum against Paytm /order/process
+    try {
+      const ordId2 = 'DIAG2_' + Date.now();
+      const classicParams = {
+        MID: M_ID, WEBSITE: PAYTM_WEBSITE.trim(), INDUSTRY_TYPE_ID: PAYTM_INDUSTRY_TYPE.trim(),
+        CHANNEL_ID: PAYTM_CHANNEL_ID.trim(), ORDER_ID: ordId2, CUST_ID: 'diag_test',
+        TXN_AMOUNT: '1.00', CALLBACK_URL: `${backendUrl}/payment/callback`
+      };
+      const classicChecksum = await PaytmChecksum.generateSignature(classicParams, M_KEY);
+      classicParams.CHECKSUMHASH = classicChecksum;
+
+      const formBody = Object.entries(classicParams)
+        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+
+      const classicResult = await new Promise((resolve, reject) => {
+        const httpReq = https.request({
+          hostname: PAYTM_HOST, port: 443, path: '/order/process', method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(formBody) }
+        }, (response) => {
+          let body = '';
+          response.on('data', (chunk) => { body += chunk; });
+          response.on('end', () => {
+            const respCode = body.match(/RESPCODE[^>]*value='([^']+)'/);
+            const respMsg = body.match(/RESPMSG[^>]*value='([^']+)'/);
+            resolve({
+              httpStatus: response.statusCode,
+              respCode: respCode?.[1] || null,
+              respMsg: respMsg?.[1] || null,
+              checksumValid: !body.includes('Invalid checksum'),
+              isPaymentPage: body.length > 20000 && !body.includes('TXN_FAILURE')
+            });
+          });
+        });
+        httpReq.on('error', reject);
+        httpReq.setTimeout(15000, () => { httpReq.destroy(); reject(new Error('Timeout')); });
+        httpReq.write(formBody);
+        httpReq.end();
+      });
+      results.classicFlow = classicResult;
+    } catch (e) { results.classicFlow = { error: e.message }; }
+
+    // Diagnosis
+    const txnFailed = results.transactionAPI?.resultCode === '501';
+    const checksumFailed = results.classicFlow?.respCode === '330';
+
+    if (txnFailed && checksumFailed) {
+      results.diagnosis = 'MERCHANT_ACCOUNT_ISSUE';
+      results.action = 'Your Paytm merchant account or key is not working. Please: (1) Regenerate the Merchant Key from Paytm Dashboard > Developer Settings > API Keys, (2) Verify your account is fully activated for production, (3) Contact Paytm support if the issue persists.';
+    } else if (checksumFailed) {
+      results.diagnosis = 'CHECKSUM_MISMATCH';
+      results.action = 'Merchant key does not match. Regenerate it from Paytm Dashboard.';
+    } else if (txnFailed) {
+      results.diagnosis = 'TXN_API_ERROR';
+      results.action = 'Transaction API has issues but classic flow works. Check WEBSITE parameter.';
+    } else {
+      results.diagnosis = 'ALL_OK';
+      results.action = 'Paytm integration is working correctly.';
+    }
+
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.get('/api', (req, res) => {
   res.json({
     message: 'JRB Gold Payment Backend API',
